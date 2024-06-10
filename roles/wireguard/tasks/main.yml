@@ -1,0 +1,31 @@
+---
+- name: Install wireguard-tools
+  package:
+    name: wireguard-tools
+    state: present
+
+- name: Deploy wireguard configuration template
+  template:
+    src: wg0.conf.j2
+    dest: /etc/wireguard/wg0.conf
+    mode: 0600
+  register: wireguard_config
+
+- name: Enable wg-quick@wg0 service
+  service:
+    name: wg-quick@wg0
+    enabled: yes
+
+- name: Restart wg-quick@wg0 service on changes
+  service:
+    name: wg-quick@wg0
+    state: restarted
+  when: wireguard_config.changed
+
+- name: Allow wireguard traffic via firewalld
+  firewalld:
+    zone: FedoraServer
+    port: "{{wireguard.listen_port}}/udp"
+    state: enabled
+    permanent: true
+    immediate: true

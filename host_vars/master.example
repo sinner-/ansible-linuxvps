@@ -1,0 +1,7 @@
+wireguard:
+  interface_address: 10.8.0.1
+  listen_port: 5000
+  private_key: xxx
+  peers:
+    - public_key: xxx
+      allowed_ip: 10.8.0.2
