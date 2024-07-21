@@ -1,0 +1,57 @@
+---
+- name: Install unbound
+  package:
+    name: unbound
+    state: present
+
+- name: Deploy unbound configuration template
+  template:
+    src: unbound.conf.j2
+    dest: /etc/unbound/unbound.conf
+    mode: 0644
+  register: unbound_config
+
+- name: Enable unbound service
+  service:
+    name: unbound
+    enabled: yes
+
+- name: Restart unbound service on changes
+  service:
+    name: unbound
+    state: restarted
+  when: unbound_config.changed
+
+- name: Allow DNS lookups on firewalld
+  firewalld:
+    zone: FedoraServer
+    service: dns
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Deploy NetworkManager dns.conf configuration template
+  template:
+    src: dns.conf.j2
+    dest: /etc/NetworkManager/conf.d/dns.conf
+    mode: 0644
+  register: network_manager_dns_config
+
+- name: Reload NetworkManager on changes
+  service:
+    name: NetworkManager
+    state: reloaded
+  when: network_manager_dns_config.changed
+
+- name: Deploy systemd-resolved configuration template
+  template:
+    src: resolved.conf.j2
+    dest: /etc/systemd/resolved.conf
+    mode: 0644
+  register: systemd_resolved_config
+
+- name: Restart systemd-resolved on changes
+  service:
+    name: systemd-resolved
+    state: restarted
+  when: systemd_resolved_config.changed
