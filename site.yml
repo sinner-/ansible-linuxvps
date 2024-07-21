@@ -1,7 +1,11 @@
 ---
 - name: wireguard VPS
-  hosts: master
+  hosts: cloud
   remote_user: root
   roles:
+    - name: ssh
+      tags: ssh
     - role: wireguard
       tags: wireguard
+    - role: unbound
+      tags: unbound

@@ -1,2 +1,2 @@
 hosts
-host_vars/master
+host_vars/cloud
