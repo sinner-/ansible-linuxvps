@@ -1,13 +1,19 @@
 server:
   username: unbound
   verbosity: 1
+
   interface: {{ wireguard.interface_address }}
   ip-freebind: yes
 {% for peer in wireguard.peers %}
   access-control: {{ peer.allowed_ip }}/32 allow
 {% endfor %}
+  do-ip4: yes
+  do-ip6: no
+  do-udp: yes
 
   prefetch: yes
+  edns-buffer-size: 4096
+
   tls-cert-bundle: /etc/ssl/cert.pem
   
   forward-zone:
