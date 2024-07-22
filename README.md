@@ -1,7 +1,3 @@
-#### TODO
-1. make `sshd` depend on `wg-quick@wg0`
-1. make `unbound` depend on `wg-quick@wg0`
-
 #### Bootstrap
 1. `mv hosts.example hosts`
 1. `sed -i 's/1.1.1.1/<your VPS external IP>/' hosts`

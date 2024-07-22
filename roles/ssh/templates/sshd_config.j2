@@ -1,7 +1,7 @@
 ListenAddress {{ wireguard.interface_address }}
 AllowUsers root
 AddressFamily inet
-PubkeyAuthentication yes
+PubkeyAuthentication no
 PasswordAuthentication no
 KerberosAuthentication no
 KerberosOrLocalPasswd no
@@ -11,3 +11,7 @@ GSSAPICleanupCredentials yes
 TCPKeepAlive no
 AllowAgentForwarding no
 Subsystem sftp /usr/libexec/openssh/sftp-server
+{% for peer in wireguard.peers %}
+Match Address {{ peer.allowed_ip }}
+  PubkeyAuthentication yes
+{% endfor %}

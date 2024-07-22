@@ -29,3 +29,25 @@
     state: enabled
     permanent: true
     immediate: true
+
+- name: Create wg-quick@wg0.service systemd override directory
+  file:
+    owner: root
+    group: root
+    mode: 0755
+    path: /etc/systemd/system/wg-quick@wg0.service.d
+    state: directory
+
+- name: Create wg-quick@wg0.service systemd override config
+  template:
+    src: systemd_override.conf.j2
+    dest: /etc/systemd/system/wg-quick@wg0.service.d/systemd_override.conf
+    mode: 0644
+  register: systemd_override_config
+
+- name: systemd daemon-reload on override changes
+  systemd_service:
+    daemon_reload: true
+  when: systemd_override_config.changed
+
+
