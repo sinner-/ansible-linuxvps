@@ -4,6 +4,7 @@ server:
 
   interface: {{ wireguard.interface_address }}
   ip-freebind: yes
+  access-control: {{ wireguard.interface_address }}/32 allow
 {% for peer in wireguard.peers %}
   access-control: {{ peer.allowed_ip }}/32 allow
 {% endfor %}
