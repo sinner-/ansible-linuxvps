@@ -22,14 +22,6 @@
     state: restarted
   when: wireguard_config.changed
 
-- name: Allow wireguard traffic via firewalld
-  firewalld:
-    zone: FedoraServer
-    port: "{{wireguard.listen_port}}/udp"
-    state: enabled
-    permanent: true
-    immediate: true
-
 - name: Create wg-quick@wg0.service systemd override directory
   file:
     owner: root

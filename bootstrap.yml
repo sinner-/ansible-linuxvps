@@ -4,26 +4,14 @@
   roles:
     - role: wireguard
   tasks:
-    - name: remove dhcpv6-client firewall rule
-      firewalld:
-        zone: FedoraServer
-        service: dhcpv6-client
-        state: disabled
-        permanent: true
-        immediate: true
-    - name: remove cockpit firewall rule
-      firewalld:
-        zone: FedoraServer
-        service: cockpit
-        state: disabled
-        permanent: true
-        immediate: true
     - name: remove unwanted packages
       dnf:
         name:
           - cockpit
           - abrt
           - gssproxy
+          - libX11
+          - firewalld
         state: absent
         autoremove: true
     - name: reboot

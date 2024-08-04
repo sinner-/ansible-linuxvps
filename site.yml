@@ -3,6 +3,8 @@
   hosts: cloud
   remote_user: root
   roles:
+    - name: nftables
+      tags: nftables
     - name: ssh
       tags: ssh
     - role: wireguard

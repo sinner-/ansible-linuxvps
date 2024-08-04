@@ -22,14 +22,6 @@
     state: restarted
   when: unbound_config.changed
 
-- name: Allow DNS lookups on firewalld
-  firewalld:
-    zone: FedoraServer
-    service: dns
-    state: enabled
-    permanent: true
-    immediate: true
-
 - name: Deploy NetworkManager dns.conf configuration template
   template:
     src: dns.conf.j2
