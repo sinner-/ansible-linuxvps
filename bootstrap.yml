@@ -8,10 +8,12 @@
       dnf:
         name:
           - cockpit
+          - cockpit-system
           - abrt
           - gssproxy
           - libX11
           - firewalld
+          - kernel-devel
         state: absent
         autoremove: true
     - name: reboot
