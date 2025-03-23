@@ -19,6 +19,7 @@ add rule inet filter input iifname wg0 tcp dport @wg_allow_tcp_ports accept
 add rule inet filter input iifname wg0 udp dport @wg_allow_udp_ports accept
 add rule inet filter input iifname wg0 ip protocol icmp accept
 
+add element inet filter ext_allow_tcp_ports { 80, 443 }
 add element inet filter ext_allow_udp_ports { 5000 }
-add element inet filter wg_allow_tcp_ports { 22 }
+add element inet filter wg_allow_tcp_ports { 22, 443 }
 add element inet filter wg_allow_udp_ports { 53 }

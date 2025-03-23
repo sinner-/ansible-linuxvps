@@ -1,0 +1,37 @@
+---
+- name: Install certbot and nginx plugin
+  dnf:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+
+- name: Check if certificate exists
+  stat:
+    path: /etc/letsencrypt/live/{{ item.domain }}/fullchain.pem
+  register: cert_stat
+  loop: "{{ websites }}"
+
+- name: Run certbot for all specified domains
+  command: certbot certonly --standalone --non-interactive --agree-tos --no-redirect --email {{ item.letsencrypt_email }} -d {{ item.domain }} -d "mail.{{ item.domain }}"
+  loop: "{{ websites }}"
+  loop_control:
+    index_var: idx
+  when: not cert_stat.results[idx].stat.exists
+
+- name: Start certbot renewal timer
+  service:
+    name: certbot-renew.timer
+    enabled: True
+    state: started
+
+- name: Deploy certbot nginx deploy hook script
+  template:
+    src: install.sh
+    dest: /etc/letsencrypt/renewal-hooks/deploy/install.sh
+    mode: 0700
+
+- name: Install certbot certs and keys first time
+  command: /etc/letsencrypt/renewal-hooks/deploy/install.sh
+  args:
+    creates: /etc/nginx/ssl

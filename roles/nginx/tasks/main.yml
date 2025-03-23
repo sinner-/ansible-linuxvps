@@ -1,0 +1,33 @@
+---
+- name: Install nginx
+  dnf:
+    name: nginx
+    state: present
+
+- name: Deploy nginx.conf template
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  register: nginx_config
+
+- name: Deploy nginx site configs
+  template:
+    src: site.conf.j2
+    dest: "/etc/nginx/conf.d/{{ item.domain }}.conf"
+  loop: "{{ websites }}"
+  register: nginx_site_config
+
+- name: Check nginx config
+  command: nginx -t
+
+- name: Enable nginx service
+  service:
+    name: nginx
+    enabled: yes
+    state: started
+
+- name: Restart nginx service on changes
+  service:
+    name: nginx
+    state: reloaded
+  when: nginx_config.changed or nginx_site_config.changed

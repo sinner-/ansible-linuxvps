@@ -7,3 +7,6 @@ wireguard:
       allowed_ip: 10.8.0.2
 ssh:
   root_authorized_key: xxx
+websites:
+  - domain: example.com
+    letsencrypt_email: foo@bar.com

@@ -1,5 +1,5 @@
 ---
-- name: wireguard VPS
+- name: Linux VPS
   hosts: cloud
   remote_user: root
   roles:
@@ -11,3 +11,9 @@
       tags: wireguard
     - role: unbound
       tags: unbound
+    - role: certbot
+      tags:
+        - certbot
+        - nginx
+    - role: nginx
+      tags: nginx
