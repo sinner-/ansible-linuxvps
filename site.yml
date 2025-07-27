@@ -19,4 +19,6 @@
         - certbot
         - nginx
     - role: nginx
-      tags: nginx
+      tags:
+        - nginx
+        - certbot
