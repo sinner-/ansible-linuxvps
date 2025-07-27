@@ -4,6 +4,10 @@
   roles:
     - role: wireguard
   tasks:
+    - name: upgrade all packages
+      dnf:
+        name: "*"
+        state: latest
     - name: remove unwanted packages
       dnf:
         name:
