@@ -8,7 +8,10 @@
     - name: ssh
       tags: ssh
     - role: wireguard
-      tags: wireguard
+      tags:
+        - wireguard
+        - ssh
+        - nginx
     - role: unbound
       tags: unbound
     - role: certbot

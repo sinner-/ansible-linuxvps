@@ -47,5 +47,12 @@ http {
     ssl_session_cache shared:SSL:50m;
     ssl_session_tickets off;
 
+    geo $trusted_access {
+        default 0;
+        {% for peer in wireguard.peers %}
+        {{ peer.allowed_ip }}/32 1;
+        {% endfor %}
+   }
+
     include /etc/nginx/conf.d/*.conf;
 }
