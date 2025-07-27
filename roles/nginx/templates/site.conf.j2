@@ -1,13 +1,16 @@
 server {
-    listen 443 ssl;
     server_name {{ item.domain }};
-    charset utf-8;
-
-    ssl_certificate /etc/nginx/ssl/{{ item.domain }}.pem;
-    ssl_certificate_key /etc/nginx/ssl/{{ item.domain }}.key;
-
     root /var/www/{{ item.domain }};
     index index.html index.htm;
+    charset utf-8;
+
+    {% if item.vpn_site %}
+listen {{ wireguard.interface_address }}:80;
+    {% else %}
+listen 443 ssl;
+    ssl_certificate /etc/nginx/ssl/{{ item.domain }}.pem;
+    ssl_certificate_key /etc/nginx/ssl/{{ item.domain }}.key;
+    {% endif %}
 
     location / {
         try_files $uri $uri/ =404;

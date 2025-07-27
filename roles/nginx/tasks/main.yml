@@ -10,7 +10,7 @@
     dest: /etc/nginx/nginx.conf
   register: nginx_config
 
-- name: Deploy nginx site configs
+- name: Deploy public nginx site configs
   template:
     src: site.conf.j2
     dest: "/etc/nginx/conf.d/{{ item.domain }}.conf"

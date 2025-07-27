@@ -18,7 +18,16 @@ server:
   tls-cert-bundle: /etc/ssl/cert.pem
 
   chroot: ""
-  
+
+  # Define local zone
+  local-zone: "cloud." static
+
+  {% for site in websites %}
+  {% if site.vpn_site and site.domain.endswith('.cloud') %}
+local-data: "{{ site.domain }} A {{ wireguard.interface_address }}"
+  {% endif %}
+  {% endfor %}
+
   forward-zone:
     name: .
     forward-tls-upstream: yes

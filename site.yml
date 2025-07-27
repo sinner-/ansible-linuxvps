@@ -13,7 +13,9 @@
         - ssh
         - nginx
     - role: unbound
-      tags: unbound
+      tags:
+        - unbound
+        - nginx
     - role: certbot
       tags:
         - certbot

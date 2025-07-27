@@ -10,3 +10,6 @@ ssh:
 websites:
   - domain: example.com
     letsencrypt_email: foo@bar.com
+    vpn_site: False
+  - domain: private_site.cloud
+    vpn_site: True

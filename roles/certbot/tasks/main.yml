@@ -11,13 +11,14 @@
     path: /etc/letsencrypt/live/{{ item.domain }}/fullchain.pem
   register: cert_stat
   loop: "{{ websites }}"
+  when: "not item.vpn_site"
 
 - name: Run certbot for all specified domains
   command: certbot certonly --standalone --non-interactive --agree-tos --no-redirect --email {{ item.letsencrypt_email }} -d {{ item.domain }} -d "mail.{{ item.domain }}"
   loop: "{{ websites }}"
   loop_control:
     index_var: idx
-  when: not cert_stat.results[idx].stat.exists
+  when: "not item.vpn_site and not cert_stat.results[idx].stat.exists"
 
 - name: Start certbot renewal timer
   service:
