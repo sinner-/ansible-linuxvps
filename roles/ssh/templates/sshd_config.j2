@@ -11,6 +11,7 @@ GSSAPICleanupCredentials yes
 TCPKeepAlive no
 AllowAgentForwarding no
 Subsystem sftp /usr/libexec/openssh/sftp-server
+UsePAM yes
 {% for peer in wireguard.peers %}
 Match Address {{ peer.allowed_ip }}
   PubkeyAuthentication yes
