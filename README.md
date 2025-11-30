@@ -1,3 +1,5 @@
+Working as of Fedora 43.
+
 #### Bootstrap
 1. `mv hosts.example hosts`
 1. `sed -i 's/1.1.1.1/<your VPS external IP>/' hosts`
