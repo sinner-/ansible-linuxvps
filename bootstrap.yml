@@ -2,17 +2,20 @@
   hosts: cloud
   remote_user: root
   roles:
+    - role: unbound
+    - role: nm
     - role: wireguard
   tasks:
-    - name: upgrade all packages
+    - name: update dnf cache
       dnf:
-        name: "*"
-        state: latest
+        update_cache: true
     - name: remove unwanted packages
       dnf:
         name:
           - cockpit
           - cockpit-system
+          - cockpit-shell
+          - cloud-init
           - abrt
           - gssproxy
           - libX11
@@ -20,5 +23,10 @@
           - kernel-devel
         state: absent
         autoremove: true
+        allowerasing: true
+    - name: upgrade all packages
+      dnf:
+        name: "*"
+        state: latest
     - name: reboot
       reboot:

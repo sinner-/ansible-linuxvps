@@ -3,24 +3,30 @@
   hosts: cloud
   remote_user: root
   roles:
+    - name: nm
+      tags: nm
     - name: nftables
       tags: nftables
     - name: ssh
       tags: ssh
-    - role: wireguard
+    - name: wireguard
       tags:
         - wireguard
         - ssh
         - nginx
-    - role: unbound
+    - name: unbound
       tags:
         - unbound
         - nginx
-    - role: certbot
+    - name: certbot
       tags:
         - certbot
         - nginx
-    - role: nginx
+    - name: nginx
       tags:
         - nginx
         - certbot
+    - name: squid
+      tags:
+        - unbound
+        - squid

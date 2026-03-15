@@ -1,0 +1,43 @@
+---
+- name: Get primary ethernet device
+  command: nmcli -t -f DEVICE,TYPE,STATE device status
+  register: nm_dev
+  changed_when: false
+
+- name: Select ethernet device
+  set_fact:
+    nm_ifname: "{{ item.split(':')[0] }}"
+  loop: "{{ nm_dev.stdout_lines }}"
+  when:
+    - "'ethernet' in item"
+    - "'connected' in item"
+
+- name: Ensure ethernet connection exists
+  community.general.nmcli:
+    conn_name: ethernet
+    ifname: "{{ nm_ifname }}"
+    type: ethernet
+    method4: auto
+    dns4:
+      - 10.8.0.1
+    dns4_ignore_auto: true
+    autoconnect: true
+    state: present
+
+- name: Get existing connections
+  command: nmcli -t -f NAME connection show
+  register: nm_connections
+  changed_when: false
+
+- name: Remove other connections
+  community.general.nmcli:
+    conn_name: "{{ item }}"
+    state: absent
+  loop: "{{ nm_connections.stdout_lines }}"
+  when:
+    - item not in ['ethernet', 'lo', 'wg0']
+
+- name: Disable static DNS in systemd-resolved
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf
+    state: absent

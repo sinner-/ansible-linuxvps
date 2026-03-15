@@ -1,3 +1,5 @@
 [Unit]
 Before=sshd.service
+Before=nginx.service
+Before=squid.service
 After=network-online.target
