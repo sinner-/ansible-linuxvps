@@ -1,4 +1,4 @@
-Working as of Fedora 43.
+Working as of Fedora 44.
 
 #### Bootstrap
 1. `mv hosts.example hosts`
