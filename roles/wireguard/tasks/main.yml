@@ -4,12 +4,68 @@
     name: wireguard-tools
     state: present
 
+- name: Ensure WireGuard configuration directory exists
+  file:
+    owner: root
+    group: root
+    mode: 0700
+    path: /etc/wireguard
+    state: directory
+
+- name: Generate WireGuard private key
+  shell: umask 077 && wg genkey > /etc/wireguard/privatekey
+  args:
+    creates: /etc/wireguard/privatekey
+  register: wireguard_private_key_generate
+  no_log: true
+
+- name: Secure WireGuard private key
+  file:
+    owner: root
+    group: root
+    mode: 0600
+    path: /etc/wireguard/privatekey
+    state: file
+
+- name: Read WireGuard private key
+  slurp:
+    src: /etc/wireguard/privatekey
+  register: wireguard_private_key_file
+  no_log: true
+
+- name: Set WireGuard private key fact
+  set_fact:
+    wireguard_private_key: "{{ wireguard_private_key_file.content | b64decode | trim }}"
+  no_log: true
+
+- name: Derive WireGuard public key
+  command: wg pubkey
+  args:
+    stdin: "{{ wireguard_private_key }}"
+  register: wireguard_public_key_command
+  changed_when: false
+  no_log: true
+
+- name: Set WireGuard public key fact
+  set_fact:
+    wireguard_public_key: "{{ wireguard_public_key_command.stdout | trim }}"
+
+- name: Persist WireGuard public key in host vars
+  lineinfile:
+    path: "{{ playbook_dir }}/host_vars/{{ inventory_hostname }}"
+    regexp: '^  public_key:'
+    insertafter: '^  listen_port:'
+    line: "  public_key: {{ wireguard_public_key }}"
+  delegate_to: localhost
+  become: false
+
 - name: Deploy wireguard configuration template
   template:
     src: wg0.conf.j2
     dest: /etc/wireguard/wg0.conf
     mode: 0600
   register: wireguard_config
+  diff: false
 
 - name: Enable wg-quick@wg0 service
   service:
@@ -21,6 +77,20 @@
     name: wg-quick@wg0
     state: restarted
   when: wireguard_config.changed
+
+- name: Pause with WireGuard peer details
+  pause:
+    prompt: |
+      WireGuard is running. Add this peer in your local WireGuard config and confirm the tunnel before continuing:
+
+      [Peer]
+      PublicKey = {{ wireguard_public_key }}
+      AllowedIPs = {{ wireguard.interface_address }}/32
+      Endpoint = {{ ansible_host | default(inventory_hostname) }}:{{ wireguard.listen_port }}
+      PersistentKeepalive = 25
+
+      Press Enter once your local WireGuard config has this peer and the tunnel is confirmed.
+  when: wireguard_private_key_generate.changed
 
 - name: Create wg-quick@wg0.service systemd override directory
   file:
@@ -41,5 +111,3 @@
   systemd_service:
     daemon_reload: true
   when: systemd_override_config.changed
-
-

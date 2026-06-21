@@ -1,7 +1,7 @@
 [Interface]
 Address = {{wireguard.interface_address}}
 ListenPort = {{wireguard.listen_port}}
-PrivateKey = {{wireguard.private_key}}
+PrivateKey = {{wireguard_private_key}}
 
 {% for peer in wireguard.peers %}
 [Peer]
