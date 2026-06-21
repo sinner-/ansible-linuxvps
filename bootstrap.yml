@@ -24,6 +24,10 @@
         state: absent
         autoremove: true
         allowerasing: true
+    - name: remove stale cloud-init MOTD
+      file:
+        path: /etc/motd
+        state: absent
     - name: upgrade all packages
       dnf:
         name: "*"
