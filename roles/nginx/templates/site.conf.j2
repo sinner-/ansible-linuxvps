@@ -4,13 +4,18 @@ server {
     index index.html index.htm;
     charset utf-8;
 
-    {% if item.vpn_site %}
-listen {{ wireguard.interface_address }}:80;
-    {% else %}
-listen 443 ssl;
+{% if item.vpn_site %}
+    listen {{ wireguard.interface_address }}:80;
+
+{% for peer in wireguard.peers %}
+    allow {{ peer.allowed_ip }}/32;
+{% endfor %}
+    deny all;
+{% else %}
+    listen 443 ssl;
     ssl_certificate /etc/nginx/ssl/{{ item.domain }}.pem;
     ssl_certificate_key /etc/nginx/ssl/{{ item.domain }}.key;
-    {% endif %}
+{% endif %}
 
     location / {
         try_files $uri $uri/ =404;
