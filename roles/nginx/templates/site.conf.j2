@@ -17,7 +17,24 @@ server {
     ssl_certificate_key /etc/nginx/ssl/{{ item.domain }}.key;
 {% endif %}
 
-    location / {
+{% if item.reverse_proxies | default([]) -%}
+{% for reverse_proxy in item.reverse_proxies %}
+    location = {{ reverse_proxy.path }} {
+        return 308 {{ reverse_proxy.path }}/;
+    }
+
+    location {{ reverse_proxy.path }}/ {
+        proxy_pass {{ reverse_proxy.upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix {{ reverse_proxy.path }};
+    }
+{% endfor %}
+
+{% endif %}    location / {
         try_files $uri $uri/ =404;
     }
 }

@@ -10,15 +10,26 @@
     dest: /etc/nginx/nginx.conf
   register: nginx_config
 
-- name: Deploy public nginx site configs
+- name: Deploy nginx site configs
   template:
     src: site.conf.j2
     dest: "/etc/nginx/conf.d/{{ item.domain }}.conf"
   loop: "{{ websites }}"
   register: nginx_site_config
+  tags: reverse_proxy
+
+- name: Allow nginx to act as a network relay
+  ansible.posix.seboolean:
+    name: httpd_can_network_relay
+    state: true
+    persistent: true
+  when: websites | selectattr('reverse_proxies', 'defined') | list | length > 0
+  tags: reverse_proxy
 
 - name: Check nginx config
   command: nginx -t
+  changed_when: false
+  tags: reverse_proxy
 
 - name: Enable nginx service
   service:
@@ -30,4 +41,7 @@
   service:
     name: nginx
     state: reloaded
-  when: nginx_config.changed or nginx_site_config.changed
+  when: >-
+    (nginx_config.changed | default(false)) or
+    (nginx_site_config.changed | default(false))
+  tags: reverse_proxy
