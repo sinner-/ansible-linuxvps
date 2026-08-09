@@ -1,0 +1,26 @@
+---
+- name: Install Splitsies
+  dnf:
+    name: splitsies
+    state: present
+
+- name: Deploy Splitsies configuration
+  template:
+    src: splitsies.env.j2
+    dest: /etc/splitsies/splitsies.env
+    owner: root
+    group: root
+    mode: '0644'
+  register: splitsies_config
+
+- name: Enable and start Splitsies
+  service:
+    name: splitsies
+    enabled: true
+    state: started
+
+- name: Restart Splitsies on configuration changes
+  service:
+    name: splitsies
+    state: restarted
+  when: splitsies_config.changed

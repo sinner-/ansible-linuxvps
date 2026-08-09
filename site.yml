@@ -26,6 +26,8 @@
       tags:
         - nginx
         - certbot
+    - name: splitsies
+      tags: splitsies
     - name: squid
       tags:
         - unbound

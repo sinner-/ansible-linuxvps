@@ -12,5 +12,11 @@ websites:
   - domain: example.com
     letsencrypt_email: foo@bar.com
     vpn_site: False
+    reverse_proxies:
+      - path: /splitsies
+        upstream: http://127.0.0.1:9000
   - domain: private_site.cloud
     vpn_site: True
+splitsies:
+  public_url: https://example.com/splitsies/
+  rp_id: example.com
