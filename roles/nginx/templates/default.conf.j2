@@ -1,0 +1,10 @@
+server {
+    listen 443 ssl default_server;
+    ssl_reject_handshake on;
+}
+
+server {
+    listen {{ wireguard.interface_address }}:80 default_server;
+    server_name "";
+    return 444;
+}

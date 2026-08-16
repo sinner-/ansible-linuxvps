@@ -3,6 +3,8 @@ server {
     root /var/www/{{ item.domain }};
     index index.html index.htm;
     charset utf-8;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy same-origin always;
 
 {% if item.vpn_site %}
     listen {{ wireguard.interface_address }}:80;
@@ -15,6 +17,7 @@ server {
     listen 443 ssl;
     ssl_certificate /etc/nginx/ssl/{{ item.domain }}.pem;
     ssl_certificate_key /etc/nginx/ssl/{{ item.domain }}.key;
+    add_header Strict-Transport-Security "max-age=31536000" always;
 {% endif %}
 
 {% if item.reverse_proxies | default([]) -%}
@@ -31,6 +34,8 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Prefix {{ reverse_proxy.path }};
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header Referrer-Policy;
     }
 {% endfor %}
 

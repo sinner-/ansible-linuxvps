@@ -4,16 +4,54 @@
     name: nginx
     state: present
 
+- name: Create nginx service override directory
+  file:
+    path: /etc/systemd/system/nginx.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy nginx service hardening
+  template:
+    src: hardening.conf.j2
+    dest: /etc/systemd/system/nginx.service.d/hardening.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: nginx_service_hardening
+
+- name: Reload systemd on service changes
+  systemd_service:
+    daemon_reload: true
+  when: nginx_service_hardening.changed
+
 - name: Deploy nginx.conf template
   template:
     src: nginx.conf.j2
     dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/nginx -t -c %s
   register: nginx_config
+
+- name: Deploy nginx default servers
+  template:
+    src: default.conf.j2
+    dest: /etc/nginx/conf.d/00-default.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: nginx_default_config
 
 - name: Deploy nginx site configs
   template:
     src: site.conf.j2
     dest: "/etc/nginx/conf.d/{{ item.domain }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
   loop: "{{ websites }}"
   register: nginx_site_config
   tags: reverse_proxy
@@ -29,7 +67,13 @@
 - name: Check nginx config
   command: nginx -t
   changed_when: false
+  check_mode: false
   tags: reverse_proxy
+
+- name: Check nginx service
+  command: systemd-analyze verify nginx.service
+  changed_when: false
+  check_mode: false
 
 - name: Enable nginx service
   service:
@@ -37,11 +81,19 @@
     enabled: yes
     state: started
 
-- name: Restart nginx service on changes
+- name: Restart nginx service on sandbox changes
+  service:
+    name: nginx
+    state: restarted
+  when: nginx_service_hardening.changed
+
+- name: Reload nginx service on configuration changes
   service:
     name: nginx
     state: reloaded
   when: >-
-    (nginx_config.changed | default(false)) or
-    (nginx_site_config.changed | default(false))
+    not (nginx_service_hardening.changed | default(false)) and
+    ((nginx_config.changed | default(false)) or
+    (nginx_default_config.changed | default(false)) or
+    (nginx_site_config.changed | default(false)))
   tags: reverse_proxy
