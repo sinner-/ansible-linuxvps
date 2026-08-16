@@ -1,0 +1,178 @@
+---
+kernel_hardening_sysctls:
+  dev.tty.ldisc_autoload: 0
+  fs.protected_fifos: 2
+  fs.protected_hardlinks: 1
+  fs.protected_regular: 2
+  fs.protected_symlinks: 1
+  fs.suid_dumpable: 0
+  kernel.dmesg_restrict: 1
+  kernel.ftrace_enabled: 0
+  kernel.io_uring_disabled: 1
+  kernel.io_uring_group: -1
+  kernel.kexec_load_disabled: 1
+  kernel.kptr_restrict: 2
+  kernel.perf_event_paranoid: 3
+  kernel.printk: 3 3 3 3
+  kernel.randomize_va_space: 2
+  kernel.sysrq: 0
+  kernel.unprivileged_bpf_disabled: 1
+  kernel.yama.ptrace_scope: 2
+  net.core.bpf_jit_harden: 2
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.all.secure_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.default.accept_source_route: 0
+  net.ipv4.conf.default.rp_filter: 1
+  net.ipv4.conf.default.secure_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv4.icmp_echo_ignore_all: 1
+  net.ipv4.ping_group_range: 1 0
+  net.ipv4.tcp_dsack: 0
+  net.ipv4.tcp_fack: 0
+  net.ipv4.tcp_rfc1337: 1
+  net.ipv4.tcp_sack: 0
+  net.ipv4.tcp_syncookies: 1
+  net.mptcp.enabled: 0
+  net.ipv6.conf.all.accept_ra: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  net.ipv6.conf.default.accept_ra: 0
+  net.ipv6.conf.default.accept_redirects: 0
+  net.ipv6.conf.default.accept_source_route: 0
+  user.max_user_namespaces: 0
+  vm.mmap_rnd_bits: 32
+  vm.mmap_rnd_compat_bits: 16
+  vm.unprivileged_userfaultfd: 0
+
+kernel_hardening_kernel_arguments:
+  - slab_nomerge
+  - init_on_alloc=1
+  - init_on_free=1
+  - page_alloc.shuffle=1
+  - pti=on
+  - randomize_kstack_offset=on
+  - vsyscall=none
+  - debugfs=off
+  - oops=panic
+  - module.sig_enforce=1
+  - lockdown=confidentiality
+  - quiet
+  - loglevel=0
+
+kernel_hardening_disabled_modules:
+  - dccp
+  - sctp
+  - rds
+  - tipc
+  - n_hdlc
+  - ax25
+  - netrom
+  - x25
+  - rose
+  - decnet
+  - econet
+  - af_802154
+  - ipx
+  - appletalk
+  - psnap
+  - p8023
+  - p8022
+  - can
+  - atm
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfs
+  - hfsplus
+  - squashfs
+  - udf
+  - cifs
+  - nfs
+  - nfsv3
+  - nfsv4
+  - ksmbd
+  - gfs2
+  - vivid
+  - bluetooth
+  - btusb
+  - uvcvideo
+  - snd_hda_intel
+  - crypto_user
+  - snd_hda_codec_generic
+  - snd_hda_codec
+  - snd_hda_core
+  - snd_intel_dspcfg
+  - snd_intel_sdw_acpi
+  - snd_hwdep
+  - snd_pcm
+  - snd_timer
+  - snd_seq
+  - snd_seq_device
+  - snd_rawmidi
+  - snd
+  - soundcore
+  - intel_rapl_msr
+  - intel_rapl_common
+  - rapl
+  - iTCO_wdt
+  - intel_pmc_bxt
+  - i6300esb
+  - i2c_i801
+  - i2c_smbus
+  - i2c_dev
+  - lpc_ich
+  - qrtr
+  - rfkill
+  - joydev
+  - vmw_vsock_virtio_transport
+  - vmw_vsock_virtio_transport_common
+  - vsock
+  - vsock_diag
+  - qemu_fw_cfg
+  - bochs
+  - serio_raw
+  - raid1
+  - ecryptfs
+  - virtiofs
+  - fuse
+  - nfc
+  - smc
+  - smc_diag
+  - af_key
+  - tun
+  - tap
+  - ppp_generic
+  - ppp_async
+  - ppp_synctty
+  - pppoe
+  - pppox
+  - pptp
+  - l2tp_core
+  - l2tp_netlink
+  - l2tp_ppp
+  - firewire_core
+  - firewire_ohci
+  - thunderbolt
+  - cfg80211
+  - mac80211
+  - uinput
+
+kernel_hardening_masked_module_load_configs:
+  - ecryptfs.conf
+  - fwupd-i2c.conf
+
+kernel_hardening_module_blacklist_argument: >-
+  module_blacklist={{ kernel_hardening_disabled_modules | join(',') }}
+
+kernel_hardening_proc_group: proc
+kernel_hardening_proc_gid: 60000
+kernel_hardening_proc_consumers:
+  - systemd-logind.service
+
+kernel_hardening_masked_mounts:
+  - sys-kernel-debug.mount
+  - sys-kernel-tracing.mount

@@ -9,6 +9,50 @@
     - name: update dnf cache
       dnf:
         update_cache: true
+    - name: restrict NetworkManager authorization to root
+      copy:
+        content: |
+          [main]
+          auth-polkit=root-only
+        dest: /etc/NetworkManager/conf.d/10-root-only.conf
+        owner: root
+        group: root
+        mode: '0644'
+    - name: mask unused systemd units
+      systemd_service:
+        name: "{{ item }}"
+        enabled: false
+        masked: true
+      loop:
+        - systemd-resolved.service
+        - systemd-resolved-monitor.socket
+        - systemd-resolved-varlink.socket
+        - ModemManager.service
+        - udisks2.service
+        - fwupd.service
+        - fwupd-refresh.service
+        - fwupd-refresh.timer
+        - systemd-homed.service
+        - systemd-homed-activate.service
+        - polkit.service
+        - mcelog.service
+        - atd.service
+        - cloud-init-log-reader.service
+        - getty@tty4.service
+        - sssd-kcm.service
+        - sssd-kcm.socket
+        - iscsid.service
+        - iscsid.socket
+        - iscsiuio.service
+        - iscsiuio.socket
+        - pcscd.service
+        - pcscd.socket
+        - systemd-rfkill.service
+        - systemd-rfkill.socket
+        - raid-check.service
+        - raid-check.timer
+        - plocate-updatedb.service
+        - plocate-updatedb.timer
     - name: remove unwanted packages
       dnf:
         name:
@@ -23,9 +67,31 @@
           - libX11
           - firewalld
           - kernel-devel
+          - ModemManager
+          - NetworkManager-bluetooth
+          - NetworkManager-wwan
+          - udisks2
+          - udisks2-iscsi
+          - udisks2-lvm2
+          - fwupd
+          - mcelog
+          - at
+          - sssd-kcm
+          - iscsi-initiator-utils
+          - iscsi-initiator-utils-iscsiuio
+          - pcsc-lite
+          - pcsc-lite-ccid
+          - opensc
+          - realmd
+          - mdadm
+          - plocate
         state: absent
         autoremove: true
         allowerasing: true
+    - name: remove cloud-init log reader unit
+      file:
+        path: /usr/lib/systemd/system/cloud-init-log-reader.service
+        state: absent
     - name: remove stale cloud-init MOTD
       file:
         path: /etc/motd

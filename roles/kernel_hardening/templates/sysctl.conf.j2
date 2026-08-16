@@ -1,0 +1,3 @@
+{% for name, value in kernel_hardening_sysctls | dictsort %}
+{{ name }} = {{ value }}
+{% endfor %}

@@ -1,0 +1,239 @@
+---
+- name: Check kernel hardening interfaces
+  ansible.builtin.stat:
+    path: "/proc/sys/{{ item.key | replace('.', '/') }}"
+  loop: "{{ kernel_hardening_sysctls | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: kernel_hardening_interfaces
+
+- name: Require kernel hardening interfaces
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "{{ item.item.key }} is not supported by the running kernel"
+    quiet: true
+  loop: "{{ kernel_hardening_interfaces.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+
+- name: Configure kernel hardening
+  ansible.builtin.template:
+    src: sysctl.conf.j2
+    dest: /etc/sysctl.d/99-kernel-hardening.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Apply kernel hardening sysctls
+
+- name: Configure module restrictions
+  ansible.builtin.template:
+    src: modprobe.conf.j2
+    dest: /etc/modprobe.d/99-kernel-hardening.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Mask forced loading of disabled modules
+  ansible.builtin.file:
+    src: /dev/null
+    dest: "/etc/modules-load.d/{{ item }}"
+    state: link
+    owner: root
+    group: root
+    force: true
+    follow: false
+  loop: "{{ kernel_hardening_masked_module_load_configs }}"
+
+- name: Read installed kernel arguments
+  ansible.builtin.command:
+    cmd: /usr/bin/grubby --info=ALL
+  check_mode: false
+  changed_when: false
+  register: kernel_hardening_grubby_info
+
+- name: Parse installed kernel arguments
+  ansible.builtin.set_fact:
+    kernel_hardening_installed_kernel_arguments: >-
+      {{ kernel_hardening_grubby_info.stdout
+         | regex_findall('(?m)^args="([^"]*)"$') }}
+
+- name: Require boot loader entries
+  ansible.builtin.assert:
+    that:
+      - kernel_hardening_installed_kernel_arguments | length > 0
+    fail_msg: grubby did not report any boot loader entries
+    quiet: true
+
+- name: Initialize common kernel arguments
+  ansible.builtin.set_fact:
+    kernel_hardening_common_kernel_arguments: >-
+      {{ kernel_hardening_installed_kernel_arguments[0].split() }}
+
+- name: Find kernel arguments common to every entry
+  ansible.builtin.set_fact:
+    kernel_hardening_common_kernel_arguments: >-
+      {{ kernel_hardening_common_kernel_arguments
+         | intersect(item.split()) }}
+  loop: "{{ kernel_hardening_installed_kernel_arguments[1:] }}"
+  loop_control:
+    label: boot loader entry
+
+- name: Calculate boot loader changes
+  ansible.builtin.set_fact:
+    kernel_hardening_missing_kernel_arguments: >-
+      {{ kernel_hardening_kernel_arguments
+         | difference(kernel_hardening_common_kernel_arguments) }}
+    kernel_hardening_normalize_module_blacklist: >-
+      {{ kernel_hardening_module_blacklist_argument
+         not in kernel_hardening_common_kernel_arguments }}
+
+- name: Report boot loader changes
+  ansible.builtin.debug:
+    msg:
+      missing_arguments: "{{ kernel_hardening_missing_kernel_arguments }}"
+      normalize_module_blacklist: >-
+        {{ kernel_hardening_normalize_module_blacklist }}
+  changed_when: true
+  when:
+    - ansible_check_mode
+    - >-
+      kernel_hardening_missing_kernel_arguments | length > 0
+      or kernel_hardening_normalize_module_blacklist
+
+- name: Add kernel hardening arguments to installed kernels
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/grubby
+      - --update-kernel=ALL
+      - "--args={{ kernel_hardening_missing_kernel_arguments | join(' ') }}"
+  when:
+    - not ansible_check_mode
+    - kernel_hardening_missing_kernel_arguments | length > 0
+
+- name: Configure the module blacklist kernel argument
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/grubby
+      - --update-kernel=ALL
+      - --remove-args=module_blacklist
+      - "--args={{ kernel_hardening_module_blacklist_argument }}"
+  when:
+    - not ansible_check_mode
+    - kernel_hardening_normalize_module_blacklist
+
+- name: Install kernel update hardening hook
+  ansible.builtin.template:
+    src: 99-kernel-hardening.install.j2
+    dest: /etc/kernel/install.d/99-kernel-hardening.install
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Find installed kernel maps
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/find
+      - /boot
+      - /usr/lib/modules
+      - -xdev
+      - -maxdepth
+      - '2'
+      - -type
+      - f
+      - -name
+      - System.map*
+      - -print
+  check_mode: false
+  changed_when: false
+  register: kernel_hardening_system_maps
+
+- name: Restrict installed kernel maps
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop: "{{ kernel_hardening_system_maps.stdout_lines }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Check proc group name
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/getent
+      - group
+      - "{{ kernel_hardening_proc_group }}"
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  register: kernel_hardening_proc_group_by_name
+
+- name: Check proc group ID
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/getent
+      - group
+      - "{{ kernel_hardening_proc_gid }}"
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  register: kernel_hardening_proc_group_by_gid
+
+- name: Require an available proc group ID
+  ansible.builtin.assert:
+    that:
+      - >-
+        kernel_hardening_proc_group_by_name.rc != 0
+        or kernel_hardening_proc_group_by_name.stdout.split(':')[2]
+           | int == kernel_hardening_proc_gid
+      - >-
+        kernel_hardening_proc_group_by_gid.rc != 0
+        or kernel_hardening_proc_group_by_gid.stdout.split(':')[0]
+           == kernel_hardening_proc_group
+    fail_msg: >-
+      The configured proc group name or ID is already assigned differently
+    quiet: true
+
+- name: Create proc visibility group
+  ansible.builtin.group:
+    name: "{{ kernel_hardening_proc_group }}"
+    gid: "{{ kernel_hardening_proc_gid }}"
+    system: true
+
+- name: Configure proc mount restrictions
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\s*proc\s+/proc\s+proc\s+'
+    line: >-
+      proc /proc proc nosuid,nodev,noexec,hidepid=2,gid={{ kernel_hardening_proc_gid }} 0 0
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create proc consumer override directories
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ kernel_hardening_proc_consumers }}"
+  notify: Reload systemd
+
+- name: Exempt proc consumers from process hiding
+  ansible.builtin.template:
+    src: proc-visibility.conf.j2
+    dest: >-
+      /etc/systemd/system/{{ item }}.d/proc-visibility.conf
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ kernel_hardening_proc_consumers }}"
+  notify: Reload systemd
+
+- name: Mask kernel debugging filesystems
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    masked: true
+  loop: "{{ kernel_hardening_masked_mounts }}"

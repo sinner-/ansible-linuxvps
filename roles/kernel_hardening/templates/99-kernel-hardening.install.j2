@@ -1,0 +1,19 @@
+#!/bin/sh
+if [ "$1" != add ]; then
+    exit 0
+fi
+
+kernel_version=$2
+kernel_image=/boot/vmlinuz-"$kernel_version"
+
+for system_map in /boot/System.map-"$kernel_version" /usr/lib/modules/"$kernel_version"/System.map; do
+    if [ -e "$system_map" ]; then
+        /usr/bin/chmod 0600 -- "$system_map"
+    fi
+done
+
+if [ -e "$kernel_image" ]; then
+    /usr/bin/grubby --update-kernel="$kernel_image" --args="{{ kernel_hardening_kernel_arguments | join(' ') }}"
+    /usr/bin/grubby --update-kernel="$kernel_image" --remove-args=module_blacklist
+    /usr/bin/grubby --update-kernel="$kernel_image" --args="{{ kernel_hardening_module_blacklist_argument }}"
+fi

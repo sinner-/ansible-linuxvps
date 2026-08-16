@@ -1,0 +1,4 @@
+{% for module in kernel_hardening_disabled_modules | unique | sort %}
+blacklist {{ module }}
+install {{ module }} /usr/bin/false
+{% endfor %}
