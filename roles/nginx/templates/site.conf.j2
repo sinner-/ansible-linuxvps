@@ -1,8 +1,12 @@
+{% set allowed_methods = item.allowed_methods | default(nginx_default_allowed_methods) -%}
 server {
     server_name {{ item.domain }};
     root /var/www/{{ item.domain }};
     index index.html index.htm;
     charset utf-8;
+{% if item.client_max_body_size is defined %}
+    client_max_body_size {{ item.client_max_body_size }};
+{% endif %}
     add_header X-Content-Type-Options nosniff always;
     add_header Referrer-Policy same-origin always;
 
@@ -23,10 +27,16 @@ server {
 {% if item.reverse_proxies | default([]) -%}
 {% for reverse_proxy in item.reverse_proxies %}
     location = {{ reverse_proxy.path }} {
+        limit_except {{ allowed_methods | join(' ') }} {
+            deny all;
+        }
         return 308 {{ reverse_proxy.path }}/;
     }
 
     location {{ reverse_proxy.path }}/ {
+        limit_except {{ allowed_methods | join(' ') }} {
+            deny all;
+        }
         proxy_pass {{ reverse_proxy.upstream }};
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -40,6 +50,9 @@ server {
 {% endfor %}
 
 {% endif %}    location / {
+        limit_except {{ allowed_methods | join(' ') }} {
+            deny all;
+        }
         try_files $uri $uri/ =404;
     }
 }

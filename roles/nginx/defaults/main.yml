@@ -1,0 +1,5 @@
+---
+nginx_default_client_max_body_size: 32K
+nginx_default_allowed_methods:
+  - GET
+  - HEAD

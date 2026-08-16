@@ -12,6 +12,11 @@ websites:
   - domain: example.com
     letsencrypt_email: foo@bar.com
     vpn_site: False
+    allowed_methods:
+      - GET
+      - HEAD
+      - POST
+    client_max_body_size: 64K
     reverse_proxies:
       - path: /splitsies
         upstream: http://127.0.0.1:9000

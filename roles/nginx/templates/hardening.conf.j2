@@ -29,5 +29,5 @@ SocketBindDeny=any
 SystemCallArchitectures=native
 SystemCallErrorNumber=EPERM
 SystemCallFilter=@system-service
-SystemCallFilter=~@aio @ipc @keyring @memlock @mount @obsolete @privileged @resources kcmp landlock_add_rule landlock_create_ruleset landlock_restrict_self listmount lsm_get_self_attr lsm_list_modules mknod mknodat name_to_handle_at open_tree pidfd_open pidfd_send_signal setns statmount swapcontext unshare uretprobe userfaultfd
+SystemCallFilter=~@aio @ipc @keyring @memlock @mount @obsolete @privileged @resources fgetxattr flistxattr fremovexattr fsetxattr getxattr getxattrat kcmp landlock_add_rule landlock_create_ruleset landlock_restrict_self lgetxattr listmount listxattr listxattrat llistxattr lremovexattr lsetxattr lsm_get_self_attr lsm_list_modules mknod mknodat name_to_handle_at open_tree pidfd_open pidfd_send_signal removexattr removexattrat setns setxattr setxattrat splice statmount swapcontext tee unshare uretprobe userfaultfd vmsplice
 SystemCallFilter=@chown @setuid capset io_destroy io_setup pipe pipe2
