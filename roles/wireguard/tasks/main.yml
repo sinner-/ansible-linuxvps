@@ -44,6 +44,7 @@
     stdin: "{{ wireguard_private_key }}"
   register: wireguard_public_key_command
   changed_when: false
+  check_mode: false
   no_log: true
 
 - name: Set WireGuard public key fact

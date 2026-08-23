@@ -3,6 +3,7 @@
   command: nmcli -t -f DEVICE,TYPE,STATE device status
   register: nm_dev
   changed_when: false
+  check_mode: false
 
 - name: Select ethernet device
   set_fact:
@@ -28,6 +29,7 @@
   command: nmcli -t -f NAME connection show
   register: nm_connections
   changed_when: false
+  check_mode: false
 
 - name: Remove other connections
   community.general.nmcli:
