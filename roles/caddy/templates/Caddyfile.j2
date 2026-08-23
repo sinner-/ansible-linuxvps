@@ -1,0 +1,144 @@
+{
+	admin off
+	auto_https disable_redirects
+	persist_config off
+
+	servers 0.0.0.0:443 {
+		protocols h1 h2
+		strict_sni_host on
+		max_header_size {{ caddy_max_request_header_size }}
+		timeouts {
+			read_body {{ caddy_request_timeout }}
+			read_header {{ caddy_request_timeout }}
+			write {{ caddy_request_timeout }}
+			idle {{ caddy_idle_timeout }}
+		}
+	}
+
+	servers {{ wireguard.interface_address }}:80 {
+		protocols h1
+		max_header_size {{ caddy_max_request_header_size }}
+		timeouts {
+			read_body {{ caddy_request_timeout }}
+			read_header {{ caddy_request_timeout }}
+			write {{ caddy_request_timeout }}
+			idle {{ caddy_idle_timeout }}
+		}
+	}
+
+	log default {
+		output stderr
+		format json
+		level WARN
+	}
+}
+
+{% for item in websites %}
+{% set allowed_methods = item.allowed_methods | default(['GET', 'HEAD']) %}
+{% set raw_body_size = item.client_max_body_size | default(caddy_default_client_max_body_size) | string %}
+{% set body_size = raw_body_size | regex_replace('(?i)^([0-9]+)([kmgt])$', '\\1\\2B') %}
+{% if item.vpn_site %}
+http://{{ item.domain }} {
+	bind {{ wireguard.interface_address }}
+{% else %}
+{{ item.domain }} {
+	bind 0.0.0.0
+	tls {
+		protocols {{ caddy_tls_min_version }} {{ caddy_tls_max_version }}
+		key_type {{ caddy_tls_key_type }}
+		curves {{ caddy_tls_curves | join(' ') }}
+		ciphers {{ caddy_tls12_ciphers | join(' ') }}
+		issuer acme {
+			email {{ item.letsencrypt_email }}
+			disable_http_challenge
+		}
+	}
+{% endif %}
+
+	log {
+		output stderr
+		format json
+	}
+
+	route {
+		request_body {
+			max_size {{ body_size }}
+		}
+
+		header {
+			-Server
+			X-Content-Type-Options nosniff
+			Referrer-Policy same-origin
+{% if not item.vpn_site %}
+			Strict-Transport-Security "max-age=31536000"
+{% endif %}
+		}
+
+{% if item.vpn_site %}
+		@untrusted_peer {
+			not remote_ip {{ wireguard.peers | map(attribute='allowed_ip') | join('/32 ') }}/32
+		}
+		respond @untrusted_peer 403
+
+{% endif %}
+		@protocol_upgrade `header({'Connection':'*Upgrade*'}) || header({'Upgrade':'*'}) || header({':protocol':'*'})`
+		respond @protocol_upgrade 400
+
+		@connect method CONNECT
+		respond @connect 405
+
+		@disallowed_method {
+			not method {{ allowed_methods | join(' ') }}
+		}
+		respond @disallowed_method 405
+
+{% for reverse_proxy in item.reverse_proxies | default([]) %}
+		redir {{ reverse_proxy.path }} {{ reverse_proxy.path }}/ 308
+
+		handle {{ reverse_proxy.path }}/* {
+			reverse_proxy {{ reverse_proxy.upstream }} {
+				header_up Host {http.request.host}
+				header_up X-Real-IP {http.request.remote.host}
+				header_up X-Forwarded-Prefix {{ reverse_proxy.path }}
+				header_up -Connection
+				header_up -Upgrade
+				header_up -X-Forwarded-Host
+				header_down -X-Content-Type-Options
+				header_down -Referrer-Policy
+				transport http {
+					versions 1.1
+					compression off
+					dial_timeout 3s
+					response_header_timeout {{ caddy_request_timeout }}
+					keepalive off
+				}
+			}
+		}
+
+{% endfor %}
+		handle {
+			root * /var/www/{{ item.domain }}
+			file_server {
+				index index.html index.htm
+			}
+		}
+	}
+
+	handle_errors {
+		header {
+			-Server
+			X-Content-Type-Options nosniff
+			Referrer-Policy same-origin
+{% if not item.vpn_site %}
+			Strict-Transport-Security "max-age=31536000"
+{% endif %}
+		}
+		respond "{err.status_code} {err.status_text}\n" {err.status_code}
+	}
+}
+
+{% endfor %}
+http:// {
+	bind {{ wireguard.interface_address }}
+	abort
+}

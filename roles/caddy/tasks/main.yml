@@ -1,0 +1,65 @@
+---
+- name: Install Caddy
+  ansible.builtin.dnf:
+    name: caddy
+    state: present
+  register: caddy_package
+
+- name: Disable broad HTTP network access in SELinux
+  ansible.posix.seboolean:
+    name: httpd_can_network_connect
+    state: false
+    persistent: true
+
+- name: Allow Caddy to act as a network relay
+  ansible.posix.seboolean:
+    name: httpd_can_network_relay
+    state: true
+    persistent: true
+
+- name: Create Caddy service override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/caddy.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy Caddy service hardening
+  ansible.builtin.template:
+    src: hardening.conf.j2
+    dest: /etc/systemd/system/caddy.service.d/hardening.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: caddy_service_hardening
+
+- name: Deploy Caddy configuration
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: root
+    group: caddy
+    mode: '0640'
+    validate: /usr/bin/caddy validate --config %s --adapter caddyfile
+  register: caddy_config
+
+- name: Reload systemd on service changes
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: caddy_service_hardening.changed
+
+- name: Enable Caddy
+  ansible.builtin.systemd_service:
+    name: caddy.service
+    enabled: true
+    state: started
+
+- name: Restart Caddy on changes
+  ansible.builtin.systemd_service:
+    name: caddy.service
+    state: restarted
+  when: >-
+    caddy_package.changed or
+    caddy_service_hardening.changed or
+    caddy_config.changed

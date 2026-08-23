@@ -13,19 +13,13 @@
       tags:
         - wireguard
         - ssh
-        - nginx
+        - caddy
     - name: unbound
       tags:
         - unbound
-        - nginx
-    - name: certbot
-      tags:
-        - certbot
-        - nginx
-    - name: nginx
-      tags:
-        - nginx
-        - certbot
+        - caddy
+    - name: caddy
+      tags: caddy
     - name: splitsies
       tags: splitsies
     - name: squid

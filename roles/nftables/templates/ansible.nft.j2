@@ -10,8 +10,8 @@ add rule inet filter input ct state established,related accept
 
 add set inet filter ext_allow_tcp_ports { type inet_service; }
 add set inet filter ext_allow_udp_ports { type inet_service; }
-add rule inet filter input iifname {{ ansible_default_ipv4.interface }} tcp dport @ext_allow_tcp_ports accept
-add rule inet filter input iifname {{ ansible_default_ipv4.interface }} udp dport @ext_allow_udp_ports accept
+add rule inet filter input iifname {{ ansible_facts['default_ipv4']['interface'] }} tcp dport @ext_allow_tcp_ports accept
+add rule inet filter input iifname {{ ansible_facts['default_ipv4']['interface'] }} udp dport @ext_allow_udp_ports accept
 
 add set inet filter wg_allow_tcp_ports { type inet_service; }
 add set inet filter wg_allow_udp_ports { type inet_service; }
@@ -19,7 +19,7 @@ add rule inet filter input iifname wg0 tcp dport @wg_allow_tcp_ports accept
 add rule inet filter input iifname wg0 udp dport @wg_allow_udp_ports accept
 add rule inet filter input iifname wg0 ip protocol icmp accept
 
-add element inet filter ext_allow_tcp_ports { 80, 443 }
+add element inet filter ext_allow_tcp_ports { 443 }
 add element inet filter ext_allow_udp_ports { 5000 }
 add element inet filter wg_allow_tcp_ports { 22, 80, 3128 }
 add element inet filter wg_allow_udp_ports { 53 }
