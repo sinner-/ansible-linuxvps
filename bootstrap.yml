@@ -85,6 +85,7 @@
           - realmd
           - mdadm
           - plocate
+          - '@hardware-support'
         state: absent
         autoremove: true
         allowerasing: true
