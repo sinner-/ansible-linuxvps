@@ -28,5 +28,4 @@
         - squid
     - name: kernel_hardening
       tags:
-        - never
         - kernel_hardening
